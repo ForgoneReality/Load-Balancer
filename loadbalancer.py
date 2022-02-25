@@ -7,9 +7,10 @@ from utils import (
     get_healthy_server,
     healthcheck,
     load_configuration,
+    process_firewall_rules_flag,
     process_rules,
     process_rewrite_rules,
-    transform_backends_from_config
+    transform_backends_from_config,
 )
 
 loadbalancer = Flask(__name__)
@@ -23,6 +24,9 @@ register = transform_backends_from_config(config)
 def router(path='/'):
     updated_register = healthcheck(register)
     host_header = request.headers['Host']
+
+    if not process_firewall_rules_flag(config, host_header, request.environ['REMOTE_ADDR'], f'/{path}'):
+        return 'Forbidden', 403
 
     for entry in config['hosts']:
         if host_header == entry['host']:

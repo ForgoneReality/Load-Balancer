@@ -3,7 +3,7 @@
 import yaml
 
 from models import Server
-from utils import transform_backends_from_config, get_healthy_server, healthcheck, process_rules, process_rewrite_rules, least_connections
+from utils import transform_backends_from_config, get_healthy_server, healthcheck, process_rules, process_rewrite_rules, least_connections, process_firewall_rules_flag
 import random
 
 
@@ -149,3 +149,63 @@ def test_least_connections():
     servers = [backend1, backend2, backend3]
     result = least_connections(servers)
     assert result == backend3
+
+
+def test_process_firewall_rules_reject():
+    input = yaml.safe_load('''
+        hosts:
+          - host: www.mango.com
+            firewall_rules:
+              ip_reject:
+                - 10.192.0.1
+                - 10.192.0.2
+            servers:
+              - localhost:8081
+              - localhost:8082
+          - host: www.apple.com
+            servers:
+              - localhost:9081
+              - localhost:9082
+        paths:
+          - path: /mango
+            servers:
+              - localhost:8081
+              - localhost:8082
+          - path: /apple
+            servers:
+              - localhost:9081
+              - localhost:9082
+    ''')
+    results = process_firewall_rules_flag(input, 'www.mango.com', '10.192.0.1')
+    assert not results
+
+
+def test_process_firewall_rules_accept():
+    input = yaml.safe_load('''
+        hosts:
+          - host: www.mango.com
+            firewall_rules:
+              ip_reject:
+                - 10.192.0.1
+                - 10.192.0.2
+            servers:
+              - localhost:8081
+              - localhost:8082
+          - host: www.apple.com
+            servers:
+              - localhost:9081
+              - localhost:9082
+        paths:
+          - path: /mango
+            servers:
+              - localhost:8081
+              - localhost:8082
+          - path: /apple
+            servers:
+              - localhost:9081
+              - localhost:9082
+    ''')
+    results = process_firewall_rules_flag(input, 'www.mango.com', '55.55.55.55')
+    assert results
+
+
