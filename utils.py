@@ -61,3 +61,17 @@ def process_rules(config, host, rules, modify):
                         if key in rules:
                             rules.pop(key)
     return rules
+
+
+def process_rewrite_rules(config, host, path):
+    for entry in config.get('hosts', []):
+        if host == entry['host']:
+            rewrite_rules = entry.get('rewrite_rules', {})
+            for current_path, new_path in rewrite_rules['replace'].items():
+                return path.replace(current_path, new_path)
+
+            
+def least_connections(servers):
+    if not servers:
+        return None
+    return min(servers, key=lambda x: x.open_connections)
